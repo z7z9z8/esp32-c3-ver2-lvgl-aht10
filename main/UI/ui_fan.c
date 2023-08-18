@@ -219,6 +219,7 @@ void ui_Screen1_screen_init(void)
 lv_obj_t *ui_tem;
 lv_obj_t *ui_hum;
 lv_obj_t *ui_time;
+lv_obj_t *ui_day;
 
 void ui_show_tem_hum_init(void)
 {
@@ -241,13 +242,21 @@ void ui_show_tem_hum_init(void)
 
     lv_label_set_text(ui_hum, "Hum:");
 
+    //日期
+    ui_day = lv_label_create(lv_scr_act(),NULL);
+    lv_obj_set_x(ui_day, 0);
+    lv_obj_set_y(ui_day, 40);
+    lv_label_set_align(ui_day, LV_LABEL_ALIGN_CENTER);
+    lv_label_set_recolor(ui_day,true);
+
     //时间
     ui_time = lv_label_create(lv_scr_act(),NULL);
     lv_obj_set_x(ui_time, 0);
-    lv_obj_set_y(ui_time, 40);
+    lv_obj_set_y(ui_time, 60);
+    lv_label_set_align(ui_time, LV_LABEL_ALIGN_CENTER);
     lv_label_set_recolor(ui_time,true);
 
-    lv_label_set_text(ui_time, "Time:");
+
 
 }
 

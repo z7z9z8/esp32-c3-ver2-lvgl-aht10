@@ -34,22 +34,51 @@ static void guiTask();
 time_t now;
 char strftime_buf[64];
 struct tm timeinfo;
+char* weekday;
 
 extern lv_obj_t *ui_tem;
 extern lv_obj_t *ui_hum;
 extern lv_obj_t *ui_time;
+extern lv_obj_t *ui_day;
 
 static void get_time()
 {
     time(&now);
 
-    // 将时区设置为中国标准时间
-    setenv("TZ", "CST-8", 1);
-    tzset();
-
     localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%H:%M:%S", &timeinfo);
-    // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+    strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+    // 获取当前星期并打印
+    int week = timeinfo.tm_wday;
+
+    switch(week) {
+        case 0:
+            weekday = "Sunday";
+            break;
+        case 1:
+            weekday = "Monday";
+            break;
+        case 2:
+            weekday = "Tuesday";
+            break;
+        case 3:
+            weekday = "Wednesday";
+            break;
+        case 4:
+            weekday = "Thursday";
+            break;
+        case 5:
+            weekday = "Friday";
+            break;
+        case 6:
+            weekday = "Saturday";
+            break;
+        default:
+            weekday = "Invalid";
+            break;
+    }
+    strcpy(strftime_buf+19,weekday);
+
     ESP_LOGI("time", "The current date/time in Shanghai is: %s", strftime_buf);
 }
 
@@ -98,19 +127,18 @@ void temp_hum_task(void *pvParameters)
 
         get_time();
 
-        lv_label_set_text_fmt(ui_time, "Time:#800080 %s#", strftime_buf);
+        lv_label_set_text_fmt(ui_time, "#800080 %s#", strftime_buf);
+        // lv_label_set_text_fmt(ui_day, "#800080 %s#", weekday);
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
 
-
-
 void app_main(void)
 {
 
-
+    //设置时区 北京
     setenv("TZ", "CST-8", 1);
     tzset();
 
@@ -121,13 +149,8 @@ void app_main(void)
 
 
     wifi_init_sta();
-    // 等待 Wi-Fi 连接成功
 
     obtain_time();
-
-    // initialise_wifi();
-
-    // timer_ntp();
 
     ESP_ERROR_CHECK(i2cdev_init());
     xTaskCreatePinnedToCore(temp_hum_task, TAG_TEMP, 1024 * 8, NULL, 5, NULL, 1);
