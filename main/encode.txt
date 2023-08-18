@@ -1,0 +1,71 @@
+static const char *TAG = "KNOB TEST";
+
+#define GPIO_KNOB_A GPIO_NUM_4
+#define GPIO_KNOB_B GPIO_NUM_5
+#define KNOB_NUM    1
+
+static knob_handle_t s_knob;
+
+static void knob_left_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, "KNOB: KNOB_LEFT Count is %d", iot_knob_get_count_value((knob_handle_t)arg));
+}
+
+static void knob_right_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, "KNOB: KNOB_RIGHT Count is %d", iot_knob_get_count_value((knob_handle_t)arg));
+}
+
+static void knob_h_lim_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, "KNOB: KNOB_H_LIM");
+}
+
+static void knob_l_lim_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, "KNOB: KNOB_L_LIM");
+}
+
+static void knob_zero_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, "KNOB: KNOB_ZERO");
+}
+
+void encode_test(void)
+{
+
+    knob_config_t *cfg = calloc(1, sizeof(knob_config_t));
+    cfg->default_direction =0;
+    cfg->gpio_encoder_a = GPIO_KNOB_A;
+    cfg->gpio_encoder_b = GPIO_KNOB_B;
+
+
+        s_knob = iot_knob_create(cfg);
+        iot_knob_register_cb(s_knob, KNOB_LEFT, knob_left_cb, NULL);
+        iot_knob_register_cb(s_knob, KNOB_RIGHT, knob_right_cb, NULL);
+        iot_knob_register_cb(s_knob, KNOB_H_LIM, knob_h_lim_cb, NULL);
+        iot_knob_register_cb(s_knob, KNOB_L_LIM, knob_l_lim_cb, NULL);
+        iot_knob_register_cb(s_knob, KNOB_ZERO, knob_zero_cb, NULL);
+
+
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+    for (int i = 0; i < KNOB_NUM; i++) {
+        iot_knob_delete(s_knob);
+    }
+}
+
+
+            // lv_label_set_text_fmt(ui_all, "%s", gps_all);
+            // char hh_mm_ss[6] = {0};
+
+            // hh_mm_ss[0] = gps_all.UTC_time[0];
+            // hh_mm_ss[1] = gps_all.UTC_time[1];
+            // hh_mm_ss[2] = gps_all.UTC_time[2];
+            // hh_mm_ss[3] = gps_all.UTC_time[3];
+            // hh_mm_ss[4] = gps_all.UTC_time[4];
+            // hh_mm_ss[5] = gps_all.UTC_time[5];
+
+            //lv_label_set_text_fmt(ui_all, "%d", atoi(gps_all.UTC_time));
