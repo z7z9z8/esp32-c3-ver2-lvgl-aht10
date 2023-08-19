@@ -219,7 +219,8 @@ void ui_Screen1_screen_init(void)
 lv_obj_t *ui_tem;
 lv_obj_t *ui_hum;
 lv_obj_t *ui_time;
-lv_obj_t *ui_day;
+lv_obj_t *ui_heart_spo2;
+lv_obj_t *ui_log;
 
 void ui_show_tem_hum_init(void)
 {
@@ -243,11 +244,11 @@ void ui_show_tem_hum_init(void)
     lv_label_set_text(ui_hum, "Hum:");
 
     //日期
-    ui_day = lv_label_create(lv_scr_act(),NULL);
-    lv_obj_set_x(ui_day, 0);
-    lv_obj_set_y(ui_day, 40);
-    lv_label_set_align(ui_day, LV_LABEL_ALIGN_CENTER);
-    lv_label_set_recolor(ui_day,true);
+    ui_heart_spo2 = lv_label_create(lv_scr_act(),NULL);
+    lv_obj_set_x(ui_heart_spo2, 0);
+    lv_obj_set_y(ui_heart_spo2, 40);
+    lv_label_set_align(ui_heart_spo2, LV_LABEL_ALIGN_CENTER);
+    lv_label_set_recolor(ui_heart_spo2,true);
 
     //时间
     ui_time = lv_label_create(lv_scr_act(),NULL);
@@ -255,6 +256,15 @@ void ui_show_tem_hum_init(void)
     lv_obj_set_y(ui_time, 60);
     lv_label_set_align(ui_time, LV_LABEL_ALIGN_CENTER);
     lv_label_set_recolor(ui_time,true);
+
+    //日志
+    ui_log = lv_label_create(lv_scr_act(),NULL);
+    lv_obj_set_x(ui_log, 10);
+    lv_obj_set_y(ui_log, 80);
+    lv_label_set_long_mode(ui_log, LV_LABEL_LONG_BREAK); // 设置自动换行模式
+    lv_obj_set_width(ui_log, 140); // 设置标签宽度
+    lv_label_set_align(ui_log, LV_LABEL_ALIGN_CENTER);
+    lv_label_set_recolor(ui_log,true);
 
 
 
