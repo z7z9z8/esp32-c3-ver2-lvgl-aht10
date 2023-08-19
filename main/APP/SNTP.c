@@ -32,6 +32,9 @@ static void initialize_sntp(void)
 
 void obtain_time(void)
 {
+    if ( sntp_enabled() ) {
+        sntp_stop();
+    }
     // ESP_ERROR_CHECK(nvs_flash_init());
     // ESP_ERROR_CHECK(esp_netif_init());
     // ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -50,6 +53,7 @@ void obtain_time(void)
     }
     time(&now);
     localtime_r(&now, &timeinfo);
+
 }
 
 
