@@ -22,39 +22,7 @@
 #include "APP/wifi.h"
 #include "APP/SNTP.h"
 #include "APP/max30102.h"
-
-/*心率模块*/
-#define I2C_SDA                 (GPIO_NUM_4)
-#define I2C_SCL                 (GPIO_NUM_5)
-#define I2C_FRQ                     400000
-#define I2C_PORT                   I2C_NUM_0
-max30102_t max30102 = {};
-
-esp_err_t i2c_master_init(i2c_port_t i2c_port){
-    i2c_config_t conf = {};
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = I2C_SDA;
-    conf.scl_io_num = I2C_SCL;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = I2C_FRQ;
-    i2c_param_config(i2c_port, &conf);
-    return i2c_driver_install(i2c_port, I2C_MODE_MASTER, 0, 0, 0);
-}
-
-void heart_test(void *pvParameters){
-
-    ESP_ERROR_CHECK(i2c_master_init(I2C_PORT));
-    //Init sensor at I2C_NUM_0
-    ESP_ERROR_CHECK(max30102_init( &max30102,I2C_PORT));
-    while(1){
-        uint16_t RAWsensorDataRED[FIFO_A_FULL/2], RAWsensorDataIR[FIFO_A_FULL/2];
-        max30102_read_fifo(I2C_NUM_0, RAWsensorDataRED,RAWsensorDataIR);
-        printf("%u\n", RAWsensorDataRED[0]);
-        // printf("%u\t\n", RAWsensorDataIR[0]);
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-}
+// #include "APP/i2c.c"
 
 #define LV_TICK_PERIOD_MS 1
 
@@ -183,7 +151,7 @@ void app_main(void)
 
     // ESP_ERROR_CHECK(i2cdev_init());
     // xTaskCreatePinnedToCore(temp_hum_task, TAG_TEMP, 1024 * 8, NULL, 5, NULL, 1);
-    xTaskCreatePinnedToCore(heart_test, "heart_test", 1024 * 4, NULL, 10, NULL, 1);
+    // xTaskCreatePinnedToCore(heart_test, "heart_test", 1024 * 4, NULL, 10, NULL, 1);
 
     while (true)
     {
