@@ -21,11 +21,42 @@
 #include "APP/AHT10.h"
 #include "APP/wifi.h"
 #include "APP/SNTP.h"
+#include "APP/max30102.h"
 
+/*心率模块*/
+#define I2C_SDA                 (GPIO_NUM_4)
+#define I2C_SCL                 (GPIO_NUM_5)
+#define I2C_FRQ                     400000
+#define I2C_PORT                   I2C_NUM_0
+max30102_t max30102 = {};
 
+esp_err_t i2c_master_init(i2c_port_t i2c_port){
+    i2c_config_t conf = {};
+    conf.mode = I2C_MODE_MASTER;
+    conf.sda_io_num = I2C_SDA;
+    conf.scl_io_num = I2C_SCL;
+    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.master.clk_speed = I2C_FRQ;
+    i2c_param_config(i2c_port, &conf);
+    return i2c_driver_install(i2c_port, I2C_MODE_MASTER, 0, 0, 0);
+}
+
+void heart_test(void *pvParameters){
+
+    ESP_ERROR_CHECK(i2c_master_init(I2C_PORT));
+    //Init sensor at I2C_NUM_0
+    ESP_ERROR_CHECK(max30102_init( &max30102,I2C_PORT));
+    while(1){
+        uint16_t RAWsensorDataRED[FIFO_A_FULL/2], RAWsensorDataIR[FIFO_A_FULL/2];
+        max30102_read_fifo(I2C_NUM_0, RAWsensorDataRED,RAWsensorDataIR);
+        printf("%u\n", RAWsensorDataRED[0]);
+        // printf("%u\t\n", RAWsensorDataIR[0]);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
 
 #define LV_TICK_PERIOD_MS 1
-
 
 static void lv_tick_task(void *arg);
 static void guiTask();
@@ -34,7 +65,7 @@ static void guiTask();
 time_t now;
 char strftime_buf[64];
 struct tm timeinfo;
-char* weekday;
+char *weekday;
 
 extern lv_obj_t *ui_tem;
 extern lv_obj_t *ui_hum;
@@ -51,37 +82,37 @@ static void get_time()
     // 获取当前星期并打印
     int week = timeinfo.tm_wday;
 
-    switch(week) {
-        case 0:
-            weekday = "Sunday";
-            break;
-        case 1:
-            weekday = "Monday";
-            break;
-        case 2:
-            weekday = "Tuesday";
-            break;
-        case 3:
-            weekday = "Wednesday";
-            break;
-        case 4:
-            weekday = "Thursday";
-            break;
-        case 5:
-            weekday = "Friday";
-            break;
-        case 6:
-            weekday = "Saturday";
-            break;
-        default:
-            weekday = "Invalid";
-            break;
+    switch (week)
+    {
+    case 0:
+        weekday = "Sunday";
+        break;
+    case 1:
+        weekday = "Monday";
+        break;
+    case 2:
+        weekday = "Tuesday";
+        break;
+    case 3:
+        weekday = "Wednesday";
+        break;
+    case 4:
+        weekday = "Thursday";
+        break;
+    case 5:
+        weekday = "Friday";
+        break;
+    case 6:
+        weekday = "Saturday";
+        break;
+    default:
+        weekday = "Invalid";
+        break;
     }
-    strcpy(strftime_buf+19,weekday);
+    strcpy(strftime_buf + 19, weekday);
 
     ESP_LOGI("time", "The current date/time in Shanghai is: %s", strftime_buf);
 }
-
 
 static const char *TAG_TEMP = "aht-example";
 
@@ -91,22 +122,6 @@ void temp_hum_task(void *pvParameters)
     dev.mode = AHT_MODE_NORMAL;
     dev.type = AHT_TYPE_AHT1x;
 
-    ESP_ERROR_CHECK(aht_init_desc(&dev, AHT_I2C_ADDRESS_GND, 0, 4, 5));
-    ESP_ERROR_CHECK(aht_init(&dev));
-
-    bool calibrated;
-    ESP_ERROR_CHECK(aht_get_status(&dev, NULL, &calibrated));
-    if (calibrated)
-        ESP_LOGI(TAG_TEMP, "Sensor calibrated");
-    else
-        ESP_LOGW(TAG_TEMP, "Sensor not calibrated!");
-
-    float temperature, humidity;
-
-    esp_err_t res = aht_get_data(&dev, &temperature, &humidity);
-    lv_label_set_text_fmt(ui_tem, "Temp:#0000ff %f#", temperature);
-    lv_label_set_text_fmt(ui_hum, "Hum:#ff0000 %f#", humidity);
-
     int8_t update_count = 0;
 
     while (1)
@@ -114,14 +129,28 @@ void temp_hum_task(void *pvParameters)
         update_count++;
         if (update_count >= 2)
         {
-            res = aht_get_data(&dev, &temperature, &humidity);
+            /*打开i2c开始读取温湿度信息*/
+            ESP_ERROR_CHECK(aht_init_desc(&dev, AHT_I2C_ADDRESS_GND, 0, 4, 5));
+            ESP_ERROR_CHECK(aht_init(&dev));
+
+            bool calibrated;
+            ESP_ERROR_CHECK(aht_get_status(&dev, NULL, &calibrated));
+            if (calibrated)
+                ESP_LOGI(TAG_TEMP, "Sensor calibrated");
+            else
+                ESP_LOGW(TAG_TEMP, "Sensor not calibrated!");
+
+            float temperature, humidity;
+            esp_err_t res = aht_get_data(&dev, &temperature, &humidity);
 
             if (res == ESP_OK)
                 ESP_LOGI(TAG_TEMP, "Temperature: %.1f°C, Humidity: %.2f%%", temperature, humidity);
             else
                 ESP_LOGE(TAG_TEMP, "Error reading data: %d (%s)", res, esp_err_to_name(res));
-            lv_label_set_text_fmt(ui_tem, "Temp:#0000ff %f#", temperature);
-            lv_label_set_text_fmt(ui_hum, "Hum:#ff0000 %f#", humidity);
+                lv_label_set_text_fmt(ui_tem, "Temp:#0000ff %f#", temperature);
+                lv_label_set_text_fmt(ui_hum, "Hum:#ff0000 %f#", humidity);
+
+            /*关闭i2c设备*/
             update_count = 0;
         }
 
@@ -135,10 +164,11 @@ void temp_hum_task(void *pvParameters)
 }
 
 
+
 void app_main(void)
 {
 
-    //设置时区 北京
+    // 设置时区 北京
     setenv("TZ", "CST-8", 1);
     tzset();
 
@@ -147,14 +177,13 @@ void app_main(void)
     lv_port_indev_init(); // 按键接口
     ui_init();
 
+    // wifi_init_sta();
 
-    wifi_init_sta();
+    // obtain_time();
 
-    obtain_time();
-
-    ESP_ERROR_CHECK(i2cdev_init());
-    xTaskCreatePinnedToCore(temp_hum_task, TAG_TEMP, 1024 * 8, NULL, 5, NULL, 1);
-    // xTaskCreatePinnedToCore(&task, "print_gps_data", 1024 * 4, NULL, 10, NULL, 1);
+    // ESP_ERROR_CHECK(i2cdev_init());
+    // xTaskCreatePinnedToCore(temp_hum_task, TAG_TEMP, 1024 * 8, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(heart_test, "heart_test", 1024 * 4, NULL, 10, NULL, 1);
 
     while (true)
     {
