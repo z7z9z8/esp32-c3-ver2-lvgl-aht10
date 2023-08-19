@@ -33,6 +33,8 @@ extern lv_obj_t *ui_log;
 /*心率传感器*/
 hr_spo2_t my_hr_spo2;
 TaskHandle_t my_max30102_task;//创建测心率的句柄
+// 互斥量
+SemaphoreHandle_t hr_mutex;
 
 #define LV_TICK_PERIOD_MS 1
 
@@ -137,13 +139,20 @@ void temp_hum_task(void *pvParameters)
 
         xTaskCreate(max30102_task, "max30102_task", 4096 * 2, (void *)&my_hr_spo2, 5, &my_max30102_task);
         for(int i=0;i<10;i++){
+            // 获取互斥量
+            if (xSemaphoreTake(hr_mutex, portMAX_DELAY) == pdTRUE) {
+                // 对共享变量进行操作
+                lv_label_set_text_fmt(ui_heart_spo2, "#800080 hr:%5.1f sop2:%5.1f#", my_hr_spo2.heartrate,my_hr_spo2.pctspo2);
+                // 释放互斥量
+                xSemaphoreGive(hr_mutex);
+            }
             lv_label_set_text_fmt(ui_log, "#800080 In progress of measurement......%d#",i);
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
         vTaskDelete( my_max30102_task );
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        // vTaskDelay(pdMS_TO_TICKS(2000));
         lv_label_set_text(ui_log, "#800080 vTaskDelete is ok#");
-        lv_label_set_text_fmt(ui_heart_spo2, "#800080 hr:%5.1f sop2:%5.1f#", my_hr_spo2.heartrate,my_hr_spo2.pctspo2);
+
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -164,7 +173,8 @@ void app_main(void)
     // wifi_init_sta();
 
     // obtain_time();
-
+    // 创建互斥量
+    hr_mutex = xSemaphoreCreateMutex();
     // ESP_ERROR_CHECK(i2cdev_init());
     xTaskCreate(temp_hum_task, "temp_hum_task",1024 * 8, NULL, 5, NULL);
     // xTaskCreatePinnedToCore(temp_hum_task, TAG_TEMP, 1024 * 8, NULL, 6, NULL, 1);
